@@ -1,30 +1,56 @@
-import { useState } from 'react';
-import { dkeeper_backend } from 'declarations/dkeeper_backend';
+import React, { useState, useEffect } from "react";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
+import Note from "./components/Note";
+import CreateArea from "./components/CreateArea";
+import { dkeeper_backend } from "../../declarations/dkeeper_backend";
 
 function App() {
-  const [greeting, setGreeting] = useState('');
+  const [notes, setNotes] = useState([]);
 
-  function handleSubmit(event) {
-    event.preventDefault();
-    const name = event.target.elements.name.value;
-    dkeeper_backend.greet(name).then((greeting) => {
-      setGreeting(greeting);
+  function addNote(newNote) {
+    setNotes((prevNotes) => {
+      dkeeper_backend.createNote(newNote.title, newNote.content);
+      return [newNote, ...prevNotes];
     });
-    return false;
   }
 
+  function deleteNote(id) {
+    dkeeper_backend.deleteNote(id);
+
+    setNotes((prevNotes) => {
+      return prevNotes.filter((noteItem, index) => {
+        return index !== id;
+      });
+    });
+  }
+
+  async function fetchData() {
+    const notesArray = await dkeeper_backend.getNotes();
+    setNotes(notesArray);
+  }
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   return (
-    <main>
-      <img src="/logo2.svg" alt="DFINITY logo" />
-      <br />
-      <br />
-      <form action="#" onSubmit={handleSubmit}>
-        <label htmlFor="name">Enter your name: &nbsp;</label>
-        <input id="name" alt="Name" type="text" />
-        <button type="submit">Click Me!</button>
-      </form>
-      <section id="greeting">{greeting}</section>
-    </main>
+    <div>
+      <Header />
+      <CreateArea onAdd={addNote} />
+      {notes.map((noteItem, index) => {
+        return (
+          <Note
+            key={index}
+            id={index}
+            title={noteItem.title}
+            content={noteItem.content}
+            onDelete={deleteNote}
+          />
+        );
+      })}
+      <Footer />
+    </div>
   );
 }
 
